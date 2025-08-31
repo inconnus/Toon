@@ -13,6 +13,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const List<String> list = <String>['EP 1', 'ตอนที่ 2', 'ตอนที่ 3', 'ตอนที่ 4', 'ตอนที่ 5', 'ตอนที่ 6', 'ตอนที่ 7', 'ตอนที่ 8'];
 
+class ContentsModel {
+  final int episodeCount;
+  final int pageCount;
+  ContentsModel({required this.episodeCount, required this.pageCount});
+}
+
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -23,12 +29,15 @@ class HomePage extends ConsumerStatefulWidget {
 class _State extends ConsumerState<HomePage> {
   late PageController _pageController;
   late TextEditingController _dropdownController;
+  // int episodeCount = 0;
+  List<int> pageCounts = [];
+
   int _currentEpisode = 1;
   bool _showMenu = false;
-  double _savedOffset = 0;
+  // double _savedOffset = 0;
   bool _isDragging = false;
-  List<String> _episodes = [];
-  Map<String, int> _pages = {};
+  // List<String> _episodes = [];
+  // Map<String, int> _pages = {};
   @override
   void initState() {
     print("loadEpisodes");
@@ -65,23 +74,19 @@ class _State extends ConsumerState<HomePage> {
 
   void loadEpisodes() async {
     // ดึงรายชื่อโฟลเดอร์ตอน
-    final episodes = await fetchFiles("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/");
-    episodes.sort((a, b) {
-    // ดึงตัวเลขออกมาจาก string
-    final numA = int.parse(RegExp(r'\d+').firstMatch(a)!.group(0)!);
-    final numB = int.parse(RegExp(r'\d+').firstMatch(b)!.group(0)!);
+    final epc = await fetchFiles("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/");
+    print("epc $epc");
 
-    return numA.compareTo(numB);
-  });
-    print("Episodes ${episodes}");
-    setState(() => _episodes = episodes);
+    // print("Episodes ${episodes}");
+    // setState(() => episodeCount = epc);
 
     // ดึงไฟล์แต่ละตอน
-    final temp = <String, int>{};
-    for (var ep in episodes) {
+    final temp = <int>[];
+    for (var ep = 1; ep <= epc; ep++) {
       // print(ep);
-      final pages = await fetchFiles("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/$ep/");
-      temp[ep] = pages.length;
+      // print("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-$ep/");
+      final pages = await fetchFiles("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-$ep/");
+      temp.add(pages);
       // setState(() => _pages.add(pages));
       // print("Episode $ep -> $pages");
 
@@ -89,17 +94,20 @@ class _State extends ConsumerState<HomePage> {
       // setState(() => _pages[ep] = pages);\
       // print("Episode $ep -> ${pages.length}");
     }
+    setState(() => pageCounts = temp);
     //  if (!mounted) return;
     //  print(temp);
-    setState(() => _pages = temp);
+    // setState(() => _pages = temp);
   }
 
-  Future<List<String>> fetchFiles(String baseUrl) async {
+  Future<int> fetchFiles(String baseUrl) async {
     final res = await http.get(Uri.parse(baseUrl));
     if (res.statusCode == 200) {
       final doc = html.parse(res.body);
       final links = doc.querySelectorAll("a");
-      return links.map((e) => e.attributes['href'] ?? "").where((f) => f.isNotEmpty && f != "../" && f != ".DS_Store").toList();
+      // print("links $links");
+      // return links.length;
+      return links.map((e) => e.attributes['href'] ?? "").where((f) => f.isNotEmpty && f != "../" && f != ".DS_Store").toList().length;
     } else {
       throw Exception("Failed to load directory list");
     }
@@ -115,7 +123,7 @@ class _State extends ConsumerState<HomePage> {
               setState(() => _showMenu = !_showMenu);
             },
             child: PageView.builder(
-              itemCount: _episodes.length,
+              itemCount: pageCounts.length,
               controller: _pageController,
               onPageChanged: (value) {
                 setState(() {
@@ -123,16 +131,11 @@ class _State extends ConsumerState<HomePage> {
                 });
                 _dropdownController.text = (value + 1).toString();
               },
-              // itemBuilder: (context, pageIndex) => Row(
-              //   children: [
-              //     Text("${pageIndex + 1}"),
-              //     Text("${_episodes[pageIndex]}"),
-              //     Text("${_pages[_episodes[pageIndex]]}"),
-              //   ],
-              // ),
+              // itemBuilder: (context, pageIndex) =>
+                  // Row(children: [Text("${pageIndex + 1}"), Text("${_episodes[pageIndex]}"), Text("${_pages[_episodes[pageIndex]]}")]),
               itemBuilder: (context, pageIndex) => EpisodePage(
-                episode: _episodes[pageIndex],
-                pageCount: _pages[_episodes[pageIndex]] ?? 0,
+                // episode: _episodes[pageIndex],
+                pageCount: pageCounts[pageIndex],
                 pageIndex: pageIndex,
                 isDragging: _isDragging,
               ),
@@ -148,7 +151,7 @@ class _State extends ConsumerState<HomePage> {
                 color: Colors.grey[800],
                 child: Center(
                   child: DropdownMenuExample(
-                    length: _episodes.length,
+                    length: pageCounts.length,
                     onChanged: (value) {
                       setState(() {
                         _currentEpisode = int.parse(value);
@@ -168,11 +171,10 @@ class _State extends ConsumerState<HomePage> {
 }
 
 class EpisodePage extends ConsumerStatefulWidget {
-  final String episode;
   final int pageCount;
   final int pageIndex;
   final bool isDragging;
-  const EpisodePage({super.key, required this.episode, required this.pageCount, required this.pageIndex, required this.isDragging});
+  const EpisodePage({super.key, required this.pageCount, required this.pageIndex, required this.isDragging});
 
   @override
   ConsumerState<EpisodePage> createState() => _EpisodePageState();
@@ -207,7 +209,7 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
           removeBottom: true,
           child: ListView.builder(
             padding: EdgeInsets.zero,
-            key: PageStorageKey('page_${widget.episode}'),
+            key: PageStorageKey('page_${widget.pageIndex + 1}'),
             cacheExtent: 10,
             itemCount: widget.pageCount,
             itemBuilder: (context, index) {
@@ -215,7 +217,6 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
               // return Image.network('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${pageIndex + 1}/page_2.jpg');
               // return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
               return CachedNetworkImage(
-                
                 imageUrl: "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
                 placeholder: (context, url) => Center(child: SizedBox(width: 30, height: 30, child: CircularProgressIndicator())),
                 errorWidget: (context, url, error) {
@@ -234,8 +235,10 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
               width: 30,
               height: 30,
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25)),
-              child: Center(
-                child: Text((widget.pageIndex + 1).toString(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              child: SafeArea(
+                child: Center(
+                  child: Text((widget.pageIndex + 1).toString(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
               ),
             ),
           ),
