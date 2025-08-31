@@ -66,6 +66,14 @@ class _State extends ConsumerState<HomePage> {
   void loadEpisodes() async {
     // ดึงรายชื่อโฟลเดอร์ตอน
     final episodes = await fetchFiles("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/");
+    episodes.sort((a, b) {
+    // ดึงตัวเลขออกมาจาก string
+    final numA = int.parse(RegExp(r'\d+').firstMatch(a)!.group(0)!);
+    final numB = int.parse(RegExp(r'\d+').firstMatch(b)!.group(0)!);
+
+    return numA.compareTo(numB);
+  });
+    print("Episodes ${episodes}");
     setState(() => _episodes = episodes);
 
     // ดึงไฟล์แต่ละตอน
@@ -78,7 +86,8 @@ class _State extends ConsumerState<HomePage> {
       // print("Episode $ep -> $pages");
 
       // เก็บผลลัพธ์ใน state
-      // setState(() => _pages[ep] = pages);
+      // setState(() => _pages[ep] = pages);\
+      // print("Episode $ep -> ${pages.length}");
     }
     //  if (!mounted) return;
     //  print(temp);
@@ -90,7 +99,6 @@ class _State extends ConsumerState<HomePage> {
     if (res.statusCode == 200) {
       final doc = html.parse(res.body);
       final links = doc.querySelectorAll("a");
-
       return links.map((e) => e.attributes['href'] ?? "").where((f) => f.isNotEmpty && f != "../" && f != ".DS_Store").toList();
     } else {
       throw Exception("Failed to load directory list");
@@ -115,6 +123,13 @@ class _State extends ConsumerState<HomePage> {
                 });
                 _dropdownController.text = (value + 1).toString();
               },
+              // itemBuilder: (context, pageIndex) => Row(
+              //   children: [
+              //     Text("${pageIndex + 1}"),
+              //     Text("${_episodes[pageIndex]}"),
+              //     Text("${_pages[_episodes[pageIndex]]}"),
+              //   ],
+              // ),
               itemBuilder: (context, pageIndex) => EpisodePage(
                 episode: _episodes[pageIndex],
                 pageCount: _pages[_episodes[pageIndex]] ?? 0,
@@ -198,7 +213,7 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
             itemBuilder: (context, index) {
               // print('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg');
               // return Image.network('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${pageIndex + 1}/page_2.jpg');
-              // return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${pageIndex + 1}/page_${index + 1}.jpg");
+              // return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
               return CachedNetworkImage(
                 
                 imageUrl: "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
