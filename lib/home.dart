@@ -140,7 +140,7 @@ class _State extends ConsumerState<HomePage> {
                 await prefs.setInt('episode', value + 1);
               },
               // itemBuilder: (context, pageIndex) =>
-                  // Row(children: [Text("${pageIndex + 1}"), Text("${_episodes[pageIndex]}"), Text("${_pages[_episodes[pageIndex]]}")]),
+              // Row(children: [Text("${pageIndex + 1}"), Text("${_episodes[pageIndex]}"), Text("${_pages[_episodes[pageIndex]]}")]),
               itemBuilder: (context, pageIndex) => EpisodePage(
                 // episode: _episodes[pageIndex],
                 pageCount: pageCounts[pageIndex],
@@ -239,19 +239,22 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
               // print('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg');
               // return Image.network('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${pageIndex + 1}/page_2.jpg');
               // return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
-              return CachedNetworkImage( 
-                imageUrl: "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
-                fit: BoxFit.contain,
-                placeholder: (context, url) => Center(child: SizedBox(width: 30, height: 30, child: CircularProgressIndicator())),
-                errorWidget: (context, url, error) {
-                  return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
-                },
-                // errorWidget: (context, url, error) => Icon(Icons.error),
+              return Align(
+                alignment: Alignment.topCenter,
+                child: CachedNetworkImage(
+                  imageUrl: "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
+                  width: double.infinity,
+                  fit: BoxFit.fitWidth,
+                  placeholder: (context, url) => Center(child: SizedBox(width: 30, height: 30, child: CircularProgressIndicator())),
+                  errorWidget: (context, url, error) {
+                    return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
+                  },
+                  // errorWidget: (context, url, error) => Icon(Icons.error),
+                ),
               );
             },
           ),
         ),
-  
       ],
     );
   }
