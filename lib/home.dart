@@ -129,6 +129,7 @@ class _State extends ConsumerState<HomePage> {
               setState(() => _showMenu = !_showMenu);
             },
             child: PageView.builder(
+              
               itemCount: pageCounts.length,
               controller: _pageController,
               onPageChanged: (value) async {
@@ -239,11 +240,14 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
               // print('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg');
               // return Image.network('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${pageIndex + 1}/page_2.jpg');
               // return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
-              return CachedNetworkImage( 
-                imageUrl: "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
+              return Image.network(
+                 "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
                 fit: BoxFit.contain,
-                placeholder: (context, url) => Center(child: SizedBox(width: 30, height: 30, child: CircularProgressIndicator())),
-                errorWidget: (context, url, error) {
+                loadingBuilder: (context, child, progress) {
+                   if (progress == null) return child;
+                   return Center(child: SizedBox(width: 30, height: 30, child: CircularProgressIndicator()));
+                } ,
+                errorBuilder: (context, url, error) {
                   return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
                 },
                 // errorWidget: (context, url, error) => Icon(Icons.error),
