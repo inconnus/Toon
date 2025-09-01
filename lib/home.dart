@@ -47,19 +47,19 @@ class _State extends ConsumerState<HomePage> {
 
     _pageController = PageController();
     _dropdownController = TextEditingController();
-    _pageController.addListener(() async {
-      final page = _pageController.page ?? 0;
-      final dragging = page % 1 != 0;
+    // _pageController.addListener(() async {
+    //   final page = _pageController.page ?? 0;
+    //   final dragging = page % 1 != 0;
 
-      if (dragging != _isDragging) {
-        if (dragging) {
-          setState(() => _isDragging = dragging);
-        } else {
-          await Future.delayed(const Duration(milliseconds: 300));
-          setState(() => _isDragging = dragging);
-        }
-      }
-    });
+    //   if (dragging != _isDragging) {
+    //     if (dragging) {
+    //       setState(() => _isDragging = dragging);
+    //     } else {
+    //       await Future.delayed(const Duration(milliseconds: 300));
+    //       setState(() => _isDragging = dragging);
+    //     }
+    //   }
+    // });
 
     // // เมื่อ scroll เปลี่ยน → save ค่า
     // _controller.addListener(() {
@@ -98,6 +98,12 @@ class _State extends ConsumerState<HomePage> {
     //  if (!mounted) return;
     //  print(temp);
     // setState(() => _pages = temp);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final int? episode = prefs.getInt('episode');
+    if (episode != null) {
+      setState(() => _currentEpisode = episode);
+      _pageController.jumpToPage(episode - 1);
+    }
   }
 
   Future<int> fetchFiles(String baseUrl) async {
@@ -125,11 +131,13 @@ class _State extends ConsumerState<HomePage> {
             child: PageView.builder(
               itemCount: pageCounts.length,
               controller: _pageController,
-              onPageChanged: (value) {
+              onPageChanged: (value) async {
                 setState(() {
                   _currentEpisode = value + 1;
                 });
                 _dropdownController.text = (value + 1).toString();
+                final SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setInt('episode', value + 1);
               },
               // itemBuilder: (context, pageIndex) =>
                   // Row(children: [Text("${pageIndex + 1}"), Text("${_episodes[pageIndex]}"), Text("${_pages[_episodes[pageIndex]]}")]),
@@ -145,23 +153,38 @@ class _State extends ConsumerState<HomePage> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 0,
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 5),
-                color: Colors.grey[800],
-                child: Center(
-                  child: DropdownMenuExample(
-                    length: pageCounts.length,
-                    onChanged: (value) {
-                      setState(() {
-                        _currentEpisode = int.parse(value);
-                      });
-                      _pageController.jumpToPage(int.parse(value) - 1);
-                    },
-                    controller: _dropdownController,
-                    value: _currentEpisode.toString(),
+              bottom: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 5),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          color: const Color.fromARGB(156, 255, 255, 255),
+                          border: Border.all(color: const Color.fromARGB(255, 231, 231, 231)),
+                        ),
+                        child: Center(
+                          child: DropdownMenuExample(
+                            length: pageCounts.length,
+                            onChanged: (value) {
+                              setState(() {
+                                _currentEpisode = int.parse(value);
+                              });
+                              _pageController.jumpToPage(int.parse(value) - 1);
+                            },
+                            controller: _dropdownController,
+                            value: _currentEpisode.toString(),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
         ],
@@ -216,8 +239,9 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
               // print('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg');
               // return Image.network('http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${pageIndex + 1}/page_2.jpg');
               // return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
-              return CachedNetworkImage(
+              return CachedNetworkImage( 
                 imageUrl: "http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg",
+                fit: BoxFit.contain,
                 placeholder: (context, url) => Center(child: SizedBox(width: 30, height: 30, child: CircularProgressIndicator())),
                 errorWidget: (context, url, error) {
                   return Text("http://192.168.0.3:8080/Toon/Disastrous%20Necromancer/ep-${widget.pageIndex + 1}/page_${index + 1}.jpg");
@@ -227,21 +251,7 @@ class _EpisodePageState extends ConsumerState<EpisodePage> with AutomaticKeepAli
             },
           ),
         ),
-        if (widget.isDragging)
-          Positioned(
-            bottom: 5,
-            right: 5,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25)),
-              child: SafeArea(
-                child: Center(
-                  child: Text((widget.pageIndex + 1).toString(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ),
-          ),
+  
       ],
     );
   }
@@ -286,7 +296,7 @@ class _DropdownMenuExampleState extends State<DropdownMenuExample> {
       width: 100,
       textAlign: TextAlign.center,
       showTrailingIcon: false,
-      textStyle: TextStyle(fontSize: 14, color: Colors.white),
+      textStyle: TextStyle(fontSize: 14, color: const Color.fromARGB(255, 142, 142, 142)),
       inputDecorationTheme: InputDecorationTheme(
         contentPadding: EdgeInsets.symmetric(vertical: 8),
         isDense: true,
