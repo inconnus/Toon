@@ -131,7 +131,7 @@ class _State extends ConsumerState<HomePage> {
             child: PageView.builder(
               itemCount: pageCounts.length,
               controller: _pageController,
-              onPageChanged: (value) {
+              onPageChanged: (value) async {
                 setState(() {
                   _currentEpisode = value + 1;
                 });
